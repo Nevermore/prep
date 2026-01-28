@@ -1,0 +1,2 @@
+# Ensure lines end with \n even if the git configuration core.autocrlf is not set to true
+newline_style = "Unix"

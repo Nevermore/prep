@@ -1,0 +1,19 @@
+[package]
+name = "prep"
+version.workspace = true
+description = "Prepare Rust projects for greatness"
+keywords = ["prepare", "lint", "clippy", "ci", "policy"]
+categories = ["command-line-utilities", "config", "development-tools", "rust-patterns"]
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[package.metadata.docs.rs]
+all-features = true
+# There are no platform specific docs.
+default-target = "x86_64-unknown-linux-gnu"
+targets = []
+
+[lints]
+workspace = true
