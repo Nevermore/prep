@@ -5,14 +5,14 @@ use std::process::Command;
 
 use anyhow::{Context, ensure};
 
-use crate::ui::print_cmd;
+use crate::ui;
 
 /// Format the workspace
 pub fn run() -> anyhow::Result<()> {
     let mut cmd = Command::new("cargo");
     let cmd = cmd.arg("fmt").arg("--all");
 
-    print_cmd(cmd);
+    ui::print_cmd(cmd);
 
     let status = cmd.status().context("failed to run cargo fmt")?;
     ensure!(status.success(), "cargo fmt failed: {status}");

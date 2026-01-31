@@ -5,14 +5,14 @@ use std::process::Command;
 
 use anyhow::{Context, ensure};
 
-use crate::ui::print_cmd;
+use crate::ui;
 
 /// Runs Clippy analysis
 pub fn run() -> anyhow::Result<()> {
     let mut cmd = Command::new("cargo");
     let cmd = cmd.arg("clippy").arg("--workspace").arg("--all-features");
 
-    print_cmd(cmd);
+    ui::print_cmd(cmd);
 
     let status = cmd.status().context("failed to run cargo clippy")?;
     ensure!(status.success(), "cargo clippy failed: {status}");

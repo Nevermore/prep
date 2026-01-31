@@ -6,7 +6,9 @@
 mod cmd;
 mod ui;
 
-use clap::{CommandFactory, Parser, Subcommand};
+use clap::{CommandFactory, FromArgMatches, Parser, Subcommand};
+
+use ui::help;
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -17,17 +19,19 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    /// Clippy analysis
+    #[command(alias = "clp")]
     Clippy,
-    /// Format files
+    #[command(alias = "fmt")]
     Format,
 }
 
 fn main() -> anyhow::Result<()> {
-    let cli = Cli::parse();
+    let ccmd = help::set(Cli::command());
+    let matches = ccmd.get_matches();
+    let cli = Cli::from_arg_matches(&matches).unwrap();
 
     let Some(command) = cli.command else {
-        Cli::command().print_help().unwrap();
+        ui::print_help();
         return Ok(());
     };
 
