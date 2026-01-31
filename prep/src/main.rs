@@ -19,6 +19,8 @@ struct Cli {
 enum Commands {
     /// Clippy analysis
     Clippy,
+    /// Format files
+    Format,
 }
 
 fn main() -> anyhow::Result<()> {
@@ -31,5 +33,6 @@ fn main() -> anyhow::Result<()> {
 
     match command {
         Commands::Clippy => cmd::clippy::run(),
+        Commands::Format => cmd::format::run(),
     }
 }
