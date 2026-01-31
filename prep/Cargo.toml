@@ -17,3 +17,7 @@ targets = []
 
 [lints]
 workspace = true
+
+[dependencies]
+anyhow.workspace = true
+clap = { workspace = true, features = ["derive"] }

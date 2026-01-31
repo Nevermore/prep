@@ -12,3 +12,7 @@ repository = "https://github.com/Nevermore/prep"
 
 [workspace.lints]
 rust.missing_docs = "warn"
+
+[workspace.dependencies]
+anyhow = "1.0.100"
+clap = "4.5.56"
