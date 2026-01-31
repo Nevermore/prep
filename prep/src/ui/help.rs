@@ -34,14 +34,14 @@ Prepare Rust projects for greatness.
 {gb}Usage:{gb:#} {cb}prep{cb:#} {bb}[command] [options]{bb:#}
 
 {gb}Commands:{gb:#}
-  {cb}ci                  {cb:#}Verify for CI
-  {cb}clippy         clp  {cb:#}Analyze with Clippy
-  {cb}format         fmt  {cb:#}Format files
-  {cb}help                {cb:#}Print help
+  {cb}     ci              {cb:#}Verify for CI.
+  {cb}clp  clippy          {cb:#}Analyze with Clippy.
+  {cb}fmt  format          {cb:#}Format with rustfmt.
+  {cb}     help            {cb:#}Print help for the provided command.
 
 {gb}Options:{gb:#}
-  {cb}--help          -h  {cb:#}Print a help message for the provided command.
-  {cb}--version       -V  {cb:#}Print version information.
+  {cb}-h   --help          {cb:#}Print help for the provided command.
+  {cb}-V   --version       {cb:#}Print version information.
 "
     );
 
@@ -59,10 +59,10 @@ Verify the Rust workspace for CI.
 {gb}Usage:{gb:#} {cb}prep ci{cb:#} {bb}[options]{bb:#}
 
 {gb}Options:{gb:#}
-  {cb}--extended      -e  {cb:#}Run the extended verification suite.
-  ····                    ······Good idea for actual CI, rarely useful for local prep.
-  {cb}--no-fail-fast  -n  {cb:#}Keep going when encountering an error.
-  {cb}--help          -h  {cb:#}Print this help message.
+  {cb}-e   --extended      {cb:#}Run the extended verification suite.
+  ····                     ······Good idea for actual CI, rarely useful for local prep.
+  {cb}-n   --no-fail-fast  {cb:#}Keep going when encountering an error.
+  {cb}-h   --help          {cb:#}Print this help message.
 "
     )
     .replace("·", "");
@@ -82,8 +82,8 @@ Format the Rust workspace with rustfmt.
 ····      ······ {cb}prep format{cb:#} {bb}[options]{bb:#}
 
 {gb}Options:{gb:#}
-  {cb}--check         -c  {cb:#}Verify that the workspace is already formatted.
-  {cb}--help          -h  {cb:#}Print this help message.
+  {cb}-c   --check         {cb:#}Verify that the workspace is already formatted.
+  {cb}-h   --help          {cb:#}Print this help message.
 "
     )
     .replace("·", "");
@@ -102,8 +102,8 @@ Analyze the Rust workspace with Clippy.
 ····      ······ {cb}prep clippy{cb:#} {bb}[options]{bb:#}
 
 {gb}Options:{gb:#}
-  {cb}--strict        -s  {cb:#}Treat warnings as errors.
-  {cb}--help          -h  {cb:#}Print this help message.
+  {cb}-s   --strict        {cb:#}Treat warnings as errors.
+  {cb}-h   --help          {cb:#}Print this help message.
 "
     )
     .replace("·", "");
