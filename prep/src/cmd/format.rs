@@ -7,15 +7,15 @@ use anyhow::{Context, ensure};
 
 use crate::ui::print_cmd;
 
-/// Runs Clippy analysis
+/// Format the workspace
 pub fn run() -> anyhow::Result<()> {
     let mut cmd = Command::new("cargo");
-    let cmd = cmd.arg("clippy").arg("--workspace").arg("--all-features");
+    let cmd = cmd.arg("fmt").arg("--all");
 
     print_cmd(cmd);
 
-    let status = cmd.status().context("failed to run cargo clippy")?;
-    ensure!(status.success(), "cargo clippy failed: {status}");
+    let status = cmd.status().context("failed to run cargo fmt")?;
+    ensure!(status.success(), "cargo fmt failed: {status}");
 
     Ok(())
 }

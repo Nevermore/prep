@@ -6,8 +6,8 @@ use std::process::Command;
 
 /// Prints the binary name and its arguments to stderr.
 pub fn print_cmd(cmd: &Command) {
-	let bin = cmd.get_program();
-	let args = cmd.get_args().collect::<Vec<_>>().join(OsStr::new(" "));
+    let bin = cmd.get_program();
+    let args = cmd.get_args().collect::<Vec<_>>().join(OsStr::new(" "));
 
-	eprintln!("     Running `{} {}`", bin.display(), args.display());
+    eprintln!("     Running `{} {}`", bin.display(), args.display());
 }
