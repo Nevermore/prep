@@ -46,10 +46,10 @@ cargo install prep --locked
 Usage: prep [command] [options]
 
 Commands:
-	   ci              Verify for CI.
+       ci              Verify for CI.
   clp  clippy          Analyze with Clippy.
   fmt  format          Format with rustfmt.
-	   help            Print help for the provided command.
+       help            Print help for the provided command.
 
 Options:
   -h   --help          Print help for the provided command.
