@@ -7,10 +7,15 @@ use anyhow::{Context, ensure};
 
 use crate::ui;
 
-/// Runs Clippy analysis
-pub fn run() -> anyhow::Result<()> {
+/// Runs Clippy analysis.
+///
+/// In `strict` mode warnings are treated as errors.
+pub fn run(strict: bool) -> anyhow::Result<()> {
     let mut cmd = Command::new("cargo");
-    let cmd = cmd.arg("clippy").arg("--workspace").arg("--all-features");
+    let mut cmd = cmd.arg("clippy").arg("--workspace").arg("--all-features");
+    if strict {
+        cmd = cmd.args(["--", "-D", "warnings"]);
+    }
 
     ui::print_cmd(cmd);
 

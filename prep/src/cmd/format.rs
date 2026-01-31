@@ -8,9 +8,12 @@ use anyhow::{Context, ensure};
 use crate::ui;
 
 /// Format the workspace
-pub fn run() -> anyhow::Result<()> {
+pub fn run(check: bool) -> anyhow::Result<()> {
     let mut cmd = Command::new("cargo");
-    let cmd = cmd.arg("fmt").arg("--all");
+    let mut cmd = cmd.arg("fmt").arg("--all");
+    if check {
+        cmd = cmd.arg("--check");
+    }
 
     ui::print_cmd(cmd);
 
