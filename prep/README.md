@@ -10,7 +10,7 @@
 
 </div>
 
-Prep is a cross-platform CLI tool that provides Rust workspace verification in single short command.
+Prep is a cross-platform CLI tool that provides Rust workspace verification in a single short command.
 You can just invoke `prep ci` and if the checks succeed then you can rest easy knowing that your PR won't fail CI.
 
 ## Motivation
