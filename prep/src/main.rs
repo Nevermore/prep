@@ -19,10 +19,23 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
+    #[command()]
+    Ci {
+        #[arg(short, long)]
+        extended: bool,
+        #[arg(short, long)]
+        no_fail_fast: bool,
+    },
     #[command(alias = "clp")]
-    Clippy,
+    Clippy {
+        #[arg(short, long)]
+        strict: bool,
+    },
     #[command(alias = "fmt")]
-    Format,
+    Format {
+        #[arg(short, long)]
+        check: bool,
+    },
 }
 
 fn main() -> anyhow::Result<()> {
@@ -36,7 +49,11 @@ fn main() -> anyhow::Result<()> {
     };
 
     match command {
-        Commands::Clippy => cmd::clippy::run(),
-        Commands::Format => cmd::format::run(),
+        Commands::Ci {
+            extended,
+            no_fail_fast,
+        } => cmd::ci::run(extended, !no_fail_fast),
+        Commands::Clippy { strict } => cmd::clippy::run(strict),
+        Commands::Format { check } => cmd::format::run(check),
     }
 }
