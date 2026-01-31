@@ -12,7 +12,11 @@ use crate::ui;
 /// In `strict` mode warnings are treated as errors.
 pub fn run(strict: bool) -> anyhow::Result<()> {
     let mut cmd = Command::new("cargo");
-    let mut cmd = cmd.arg("clippy").arg("--workspace").arg("--all-features");
+    let mut cmd = cmd
+        .arg("clippy")
+        .arg("--workspace")
+        .arg("--all-features")
+        .arg("--locked");
     if strict {
         cmd = cmd.args(["--", "-D", "warnings"]);
     }
