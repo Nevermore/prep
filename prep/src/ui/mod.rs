@@ -7,7 +7,7 @@ use std::ffi::OsStr;
 use std::process::Command;
 
 use clap::builder::StyledStr;
-use clap::builder::styling::{Color, Style};
+use clap::builder::styling::{AnsiColor, Style};
 
 /// Prints the binary name and its arguments to stderr.
 pub fn print_cmd(cmd: &Command) {
@@ -32,18 +32,12 @@ pub fn print_help() {
     eprint!("{}", help::root_msg().ansi());
 }
 
-/// Returns the corresponding ANSI 256-bit color.
-pub fn color(index: u8) -> Option<Color> {
-    Some(Color::Ansi256(index.into()))
-}
-
 /// Returns `(header, cmd_or_arg, optional)` styles.
 ///
 /// These correspond to `(green, cyan, blue)`.
 pub fn styles() -> (Style, Style, Style) {
-    // TODO: Verify that especially the green color matches Cargo on non-Windows terminals.
-    let g = Style::new().fg_color(color(10)); // Green
-    let c = Style::new().fg_color(color(14)); // Cyan
-    let b = Style::new().fg_color(color(39)); // Blue
+    let g = AnsiColor::Green.on_default().bold(); // Green
+    let c = AnsiColor::BrightCyan.on_default().bold(); // Cyan
+    let b = AnsiColor::Cyan.on_default(); // Blue
     (g, c, b)
 }
