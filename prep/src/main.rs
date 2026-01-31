@@ -3,6 +3,33 @@
 
 //! Prepare a Rust project for greatness.
 
-fn main() {
-    println!("Hello, Prep!");
+mod cmd;
+mod ui;
+
+use clap::{CommandFactory, Parser, Subcommand};
+
+#[derive(Parser)]
+#[command(version, about, long_about = None)]
+struct Cli {
+    #[command(subcommand)]
+    command: Option<Commands>,
+}
+
+#[derive(Subcommand)]
+enum Commands {
+    /// Clippy analysis
+    Clippy,
+}
+
+fn main() -> anyhow::Result<()> {
+    let cli = Cli::parse();
+
+    let Some(command) = cli.command else {
+        Cli::command().print_help().unwrap();
+        return Ok(());
+    };
+
+    match command {
+        Commands::Clippy => cmd::clippy::run(),
+    }
 }
