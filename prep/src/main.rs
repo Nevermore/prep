@@ -35,6 +35,8 @@ enum Commands {
         #[arg(short, long)]
         strict: bool,
     },
+    #[command()]
+    Copyright,
     #[command(alias = "fmt")]
     Format {
         #[arg(short, long)]
@@ -58,6 +60,7 @@ fn main() -> anyhow::Result<()> {
             no_fail_fast,
         } => cmd::ci::run(extended, !no_fail_fast),
         Commands::Clippy { targets, strict } => cmd::clippy::run(targets, strict),
+        Commands::Copyright => cmd::copyright::run(),
         Commands::Format { check } => cmd::format::run(check),
     }
 }
