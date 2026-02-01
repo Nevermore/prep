@@ -69,4 +69,4 @@ Licensed under either of
 at your option.
 
 [0.1.0]: https://github.com/Nevermore/prep/releases/tag/v0.1.0
-[changelog]: prep/CHANGELOG.md
+[changelog]: CHANGELOG.md
