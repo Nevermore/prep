@@ -102,6 +102,10 @@ Analyze the Rust workspace with Clippy.
 ····      ······ {cb}prep clippy{cb:#} {bb}[options]{bb:#}
 
 {gb}Options:{gb:#}
+  {cb}-c   --crates <val>  {cb:#}Target specified crates. Possible values:
+  ····                     ······{bb}main{bb:#} -> Binaries and the main library. (default)
+  ····                     ······{bb}aux{bb:#}  -> Examples, tests, and benches.
+  ····                     ······{bb}all{bb:#}  -> All of the above.
   {cb}-s   --strict        {cb:#}Treat warnings as errors.
   {cb}-h   --help          {cb:#}Print this help message.
 "
