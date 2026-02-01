@@ -21,3 +21,4 @@ workspace = true
 [dependencies]
 anyhow.workspace = true
 clap = { workspace = true, features = ["derive"] }
+time.workspace = true

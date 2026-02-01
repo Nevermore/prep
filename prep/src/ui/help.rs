@@ -4,7 +4,7 @@
 use clap::Command;
 use clap::builder::StyledStr;
 
-use crate::ui;
+use crate::ui::style::{HEADER, LITERAL, PLACEHOLDER};
 
 /// Sets our custom help messages.
 pub fn set(cmd: Command) -> Command {
@@ -18,6 +18,8 @@ pub fn set(cmd: Command) -> Command {
             scmd.override_help(format_msg())
         } else if name == "clippy" {
             scmd.override_help(clippy_msg())
+        } else if name == "copyright" {
+            scmd.override_help(copyright_msg())
         } else {
             panic!("Sub-command '{name}' help message is not implemented");
         }
@@ -26,22 +28,23 @@ pub fn set(cmd: Command) -> Command {
 
 /// Returns the main help message.
 pub fn root_msg() -> StyledStr {
-    let (gb, cb, bb) = ui::styles();
+    let (h, l, p) = (HEADER, LITERAL, PLACEHOLDER);
     let help = format!(
         "\
 Prepare Rust projects for greatness.
 
-{gb}Usage:{gb:#} {cb}prep{cb:#} {bb}[command] [options]{bb:#}
+{h}Usage:{h:#} {l}prep{l:#} {p}[command] [options]{p:#}
 
-{gb}Commands:{gb:#}
-  {cb}     ci              {cb:#}Verify for CI.
-  {cb}clp  clippy          {cb:#}Analyze with Clippy.
-  {cb}fmt  format          {cb:#}Format with rustfmt.
-  {cb}     help            {cb:#}Print help for the provided command.
+{h}Commands:{h:#}
+  {l}     ci              {l:#}Verify for CI.
+  {l}clp  clippy          {l:#}Analyze with Clippy.
+  {l}     copyright       {l:#}Verify copyright headers.
+  {l}fmt  format          {l:#}Format with rustfmt.
+  {l}     help            {l:#}Print help for the provided command.
 
-{gb}Options:{gb:#}
-  {cb}-h   --help          {cb:#}Print help for the provided command.
-  {cb}-V   --version       {cb:#}Print version information.
+{h}Options:{h:#}
+  {l}-h   --help          {l:#}Print help for the provided command.
+  {l}-V   --version       {l:#}Print version information.
 "
     );
 
@@ -50,40 +53,18 @@ Prepare Rust projects for greatness.
 
 /// Returns the `ci` help message.
 fn ci_msg() -> StyledStr {
-    let (gb, cb, bb) = ui::styles();
-
+    let (h, l, p) = (HEADER, LITERAL, PLACEHOLDER);
     let help = format!(
         "\
 Verify the Rust workspace for CI.
 
-{gb}Usage:{gb:#} {cb}prep ci{cb:#} {bb}[options]{bb:#}
+{h}Usage:{h:#} {l}prep ci{l:#} {p}[options]{p:#}
 
-{gb}Options:{gb:#}
-  {cb}-e   --extended      {cb:#}Run the extended verification suite.
-  ····                     ······Good idea for actual CI, rarely useful for local prep.
-  {cb}-n   --no-fail-fast  {cb:#}Keep going when encountering an error.
-  {cb}-h   --help          {cb:#}Print this help message.
-"
-    )
-    .replace("·", "");
-
-    StyledStr::from(help)
-}
-
-/// Returns the `format` help message.
-fn format_msg() -> StyledStr {
-    let (gb, cb, bb) = ui::styles();
-
-    let help = format!(
-        "\
-Format the Rust workspace with rustfmt.
-
-{gb}Usage:{gb:#} {cb}prep fmt{cb:#}    {bb}[options]{bb:#}
-····      ······ {cb}prep format{cb:#} {bb}[options]{bb:#}
-
-{gb}Options:{gb:#}
-  {cb}-c   --check         {cb:#}Verify that the workspace is already formatted.
-  {cb}-h   --help          {cb:#}Print this help message.
+{h}Options:{h:#}
+  {l}-e   --extended      {l:#}Run the extended verification suite.
+  ···                     ·····Good idea for actual CI, rarely useful for local prep.
+  {l}-n   --no-fail-fast  {l:#}Keep going when encountering an error.
+  {l}-h   --help          {l:#}Print this help message.
 "
     )
     .replace("·", "");
@@ -93,21 +74,59 @@ Format the Rust workspace with rustfmt.
 
 /// Returns the `clippy` help message.
 fn clippy_msg() -> StyledStr {
-    let (gb, cb, bb) = ui::styles();
+    let (h, l, p) = (HEADER, LITERAL, PLACEHOLDER);
     let help = format!(
         "\
 Analyze the Rust workspace with Clippy.
 
-{gb}Usage:{gb:#} {cb}prep clp{cb:#}    {bb}[options]{bb:#}
-····      ······ {cb}prep clippy{cb:#} {bb}[options]{bb:#}
+{h}Usage:{h:#} {l}prep clp{l:#}    {p}[options]{p:#}
+···      ····· {l}prep clippy{l:#} {p}[options]{p:#}
 
-{gb}Options:{gb:#}
-  {cb}-c   --crates <val>  {cb:#}Target specified crates. Possible values:
-  ····                     ······{bb}main{bb:#} -> Binaries and the main library. (default)
-  ····                     ······{bb}aux{bb:#}  -> Examples, tests, and benches.
-  ····                     ······{bb}all{bb:#}  -> All of the above.
-  {cb}-s   --strict        {cb:#}Treat warnings as errors.
-  {cb}-h   --help          {cb:#}Print this help message.
+{h}Options:{h:#}
+  {l}-c   --crates <val>  {l:#}Target specified crates. Possible values:
+  ···                     ·····{p}main{p:#} -> Binaries and the main library. (default)
+  ···                     ·····{p}aux{p:#}  -> Examples, tests, and benches.
+  ···                     ·····{p}all{p:#}  -> All of the above.
+  {l}-s   --strict        {l:#}Treat warnings as errors.
+  {l}-h   --help          {l:#}Print this help message.
+"
+    )
+    .replace("·", "");
+
+    StyledStr::from(help)
+}
+
+/// Returns the `copyright` help message.
+fn copyright_msg() -> StyledStr {
+    let (h, l) = (HEADER, LITERAL);
+    let help = format!(
+        "\
+Verify that all Rust source files have the correct copyright header.
+
+{h}Usage:{h:#} {l}prep copyright{l:#}
+
+{h}Options:{h:#}
+  {l}-h   --help          {l:#}Print this help message.
+"
+    )
+    .replace("·", "");
+
+    StyledStr::from(help)
+}
+
+/// Returns the `format` help message.
+fn format_msg() -> StyledStr {
+    let (h, l, p) = (HEADER, LITERAL, PLACEHOLDER);
+    let help = format!(
+        "\
+Format the Rust workspace with rustfmt.
+
+{h}Usage:{h:#} {l}prep fmt{l:#}    {p}[options]{p:#}
+···      ····· {l}prep format{l:#} {p}[options]{p:#}
+
+{h}Options:{h:#}
+  {l}-c   --check         {l:#}Verify that the workspace is already formatted.
+  {l}-h   --help          {l:#}Print this help message.
 "
     )
     .replace("·", "");

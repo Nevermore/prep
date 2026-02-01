@@ -5,6 +5,7 @@ use clap::ValueEnum;
 
 pub mod ci;
 pub mod clippy;
+pub mod copyright;
 pub mod format;
 
 /// Cargo targets.
