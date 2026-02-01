@@ -13,6 +13,9 @@
 Prep is a cross-platform CLI tool that provides Rust workspace verification in a single short command.
 You can just invoke `prep ci` and if the checks succeed then you can rest easy knowing that your PR won't fail CI.
 
+The latest version is [0.1.0] which was published on 2026-01-31.
+You can read about the changes in the [changelog].
+
 ## Motivation
 
 Rust projects tend to have a wide variety of fairly complicated verification steps in CI.
@@ -64,3 +67,6 @@ Licensed under either of
 - MIT license ([LICENSE-MIT](LICENSE-MIT) or <http://opensource.org/licenses/MIT>)
 
 at your option.
+
+[0.1.0]: https://github.com/Nevermore/prep/releases/tag/v0.1.0
+[changelog]: prep/CHANGELOG.md
