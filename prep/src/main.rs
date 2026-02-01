@@ -10,6 +10,8 @@ use clap::{CommandFactory, FromArgMatches, Parser, Subcommand};
 
 use ui::help;
 
+use crate::cmd::CargoTargets;
+
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
 struct Cli {
@@ -28,6 +30,8 @@ enum Commands {
     },
     #[command(alias = "clp")]
     Clippy {
+        #[arg(name = "crates", short, long, value_enum, default_value_t = CargoTargets::Main)]
+        targets: CargoTargets,
         #[arg(short, long)]
         strict: bool,
     },
@@ -53,7 +57,7 @@ fn main() -> anyhow::Result<()> {
             extended,
             no_fail_fast,
         } => cmd::ci::run(extended, !no_fail_fast),
-        Commands::Clippy { strict } => cmd::clippy::run(strict),
+        Commands::Clippy { targets, strict } => cmd::clippy::run(targets, strict),
         Commands::Format { check } => cmd::format::run(check),
     }
 }

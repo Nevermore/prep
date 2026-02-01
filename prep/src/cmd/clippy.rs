@@ -5,18 +5,20 @@ use std::process::Command;
 
 use anyhow::{Context, ensure};
 
+use crate::cmd::CargoTargets;
 use crate::ui;
 
-/// Runs Clippy analysis.
+/// Runs Clippy analysis on the given `targets`.
 ///
 /// In `strict` mode warnings are treated as errors.
-pub fn run(strict: bool) -> anyhow::Result<()> {
+pub fn run(targets: CargoTargets, strict: bool) -> anyhow::Result<()> {
     let mut cmd = Command::new("cargo");
     let mut cmd = cmd
         .arg("clippy")
+        .arg("--locked")
         .arg("--workspace")
-        .arg("--all-features")
-        .arg("--locked");
+        .args(targets.as_args())
+        .arg("--all-features");
     if strict {
         cmd = cmd.args(["--", "-D", "warnings"]);
     }
