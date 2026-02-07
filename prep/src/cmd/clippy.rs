@@ -6,14 +6,16 @@ use std::process::Command;
 use anyhow::{Context, ensure};
 
 use crate::cmd::CargoTargets;
+use crate::session::Session;
 use crate::ui;
 
 /// Runs Clippy analysis on the given `targets`.
 ///
 /// In `strict` mode warnings are treated as errors.
-pub fn run(targets: CargoTargets, strict: bool) -> anyhow::Result<()> {
+pub fn run(session: &Session, targets: CargoTargets, strict: bool) -> anyhow::Result<()> {
     let mut cmd = Command::new("cargo");
     let mut cmd = cmd
+        .current_dir(session.root_dir())
         .arg("clippy")
         .arg("--locked")
         .arg("--workspace")

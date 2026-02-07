@@ -7,6 +7,7 @@ pub mod ci;
 pub mod clippy;
 pub mod copyright;
 pub mod format;
+pub mod init;
 
 /// Cargo targets.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, ValueEnum)]

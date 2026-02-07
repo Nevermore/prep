@@ -5,12 +5,13 @@ use std::process::Command;
 
 use anyhow::{Context, ensure};
 
+use crate::session::Session;
 use crate::ui;
 
 /// Format the workspace
-pub fn run(check: bool) -> anyhow::Result<()> {
+pub fn run(session: &Session, check: bool) -> anyhow::Result<()> {
     let mut cmd = Command::new("cargo");
-    let mut cmd = cmd.arg("fmt").arg("--all");
+    let mut cmd = cmd.current_dir(session.root_dir()).arg("fmt").arg("--all");
     if check {
         cmd = cmd.arg("--check");
     }

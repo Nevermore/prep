@@ -14,12 +14,14 @@ pub fn set(cmd: Command) -> Command {
         let name = scmd.get_name();
         if name == "ci" {
             scmd.override_help(ci_msg())
-        } else if name == "format" {
-            scmd.override_help(format_msg())
         } else if name == "clippy" {
             scmd.override_help(clippy_msg())
         } else if name == "copyright" {
             scmd.override_help(copyright_msg())
+        } else if name == "format" {
+            scmd.override_help(format_msg())
+        } else if name == "init" {
+            scmd.override_help(init_msg())
         } else {
             panic!("Sub-command '{name}' help message is not implemented");
         }
@@ -40,6 +42,7 @@ Prepare Rust projects for greatness.
   {l}clp  clippy          {l:#}Analyze with Clippy.
   {l}     copyright       {l:#}Verify copyright headers.
   {l}fmt  format          {l:#}Format with rustfmt.
+  {l}     init            {l:#}Initialize Prep configuration.
   {l}     help            {l:#}Print help for the provided command.
 
 {h}Options:{h:#}
@@ -126,6 +129,25 @@ Format the Rust workspace with rustfmt.
 
 {h}Options:{h:#}
   {l}-c   --check         {l:#}Verify that the workspace is already formatted.
+  {l}-h   --help          {l:#}Print this help message.
+"
+    )
+    .replace("·", "");
+
+    StyledStr::from(help)
+}
+
+/// Returns the `init` help message.
+fn init_msg() -> StyledStr {
+    let (h, l, p) = (HEADER, LITERAL, PLACEHOLDER);
+    let help = format!(
+        "\
+Initialize Prep configuration for this Rust workspace.
+
+{h}Usage:{h:#} {l}prep init{l:#} {p}[options]{p:#}
+
+{h}Options:{h:#}
+  {l}-f   --force         {l:#}Overwrite existing configuration.
   {l}-h   --help          {l:#}Print this help message.
 "
     )

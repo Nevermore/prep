@@ -6,21 +6,23 @@ use std::process::Command;
 use anyhow::{Context, bail, ensure};
 use time::UtcDateTime;
 
+use crate::session::Session;
 use crate::ui;
 use crate::ui::style::{ERROR, HEADER, LITERAL, NOTE};
 
 // TODO: Allow configuring the regex
 // TODO: Allow excluding files from the check
-// TODO: ALlow configuring the project name
-// TODO: Allow configuring the license (or fetch it from Cargo.toml per-package?)
-
-const REGEX: &str = r#"^// Copyright (19|20)[\d]{2} (.+ and )?the Prep Authors( and .+)?$\n^// SPDX-License-Identifier: Apache-2\.0 OR MIT$\n\n"#;
 
 /// Verify copyright headers.
-pub fn run() -> anyhow::Result<()> {
+pub fn run(session: &Session) -> anyhow::Result<()> {
+    let config = session.config();
+    let project = config.project();
+    let header_regex = header_regex(project.name(), project.license());
+
     let mut cmd = Command::new("rg");
     let cmd = cmd
-        .arg(REGEX)
+        .current_dir(session.root_dir())
+        .arg(header_regex)
         .arg("--files-without-match")
         .arg("--multiline")
         .args(["-g", "*.rs"])
@@ -38,7 +40,11 @@ pub fn run() -> anyhow::Result<()> {
     );
 
     if !output.stdout.is_empty() {
-        print_missing(String::from_utf8(output.stdout).unwrap());
+        print_missing(
+            project.name(),
+            project.license(),
+            String::from_utf8(output.stdout).unwrap(),
+        );
         bail!("failed copyright header verification");
     }
 
@@ -48,14 +54,27 @@ pub fn run() -> anyhow::Result<()> {
     Ok(())
 }
 
-fn print_missing(msg: String) {
+fn header_regex(name: &str, license: &str) -> String {
+    let name = regex::escape(name);
+    let license = regex::escape(license);
+
+    let mut re = String::new();
+    re.push_str(r#"^// Copyright (19|20)[\d]{2} (.+ and )?the "#);
+    re.push_str(&name);
+    re.push_str(r#" Authors( and .+)?$\n^// SPDX-License-Identifier: "#);
+    re.push_str(&license);
+    re.push_str(r#"$\n\n"#);
+    re
+}
+
+fn print_missing(name: &str, license: &str, msg: String) {
     let (e, l, n) = (ERROR, LITERAL, NOTE);
     let year = UtcDateTime::now().year();
 
     eprintln!("{e}The following files lack the correct copyright header:{e:#}");
     eprintln!("{l}{msg}{l:#}");
     eprintln!("{n}Please add the following header:{n:#}\n");
-    eprintln!("// Copyright {year} the Prep Authors");
-    eprintln!("// SPDX-License-Identifier: Apache-2.0 OR MIT");
+    eprintln!("// Copyright {year} the {name} Authors");
+    eprintln!("// SPDX-License-Identifier: {license}");
     eprintln!("\n... rest of the file ...\n");
 }
