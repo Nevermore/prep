@@ -6,6 +6,7 @@
 mod cmd;
 mod config;
 mod session;
+mod tools;
 mod ui;
 
 use clap::{CommandFactory, FromArgMatches, Parser, Subcommand};

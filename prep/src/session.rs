@@ -10,6 +10,7 @@ use anyhow::{Context, Result, bail};
 use cargo_metadata::MetadataCommand;
 
 use crate::config::Config;
+use crate::tools::cargo;
 
 const PREP_DIR: &str = ".prep";
 const CONFIG_FILE: &str = "prep.toml";
@@ -44,7 +45,9 @@ impl Session {
         let root_dir = match root_dir {
             Some(root_dir) => root_dir,
             None => {
+                let cmd = cargo::new("")?;
                 let metadata = MetadataCommand::new()
+                    .cargo_path(cmd.get_program())
                     .exec()
                     .context("failed to fetch Cargo metadata")?;
                 let workspace_dir = metadata.workspace_root.into_std_path_buf();
