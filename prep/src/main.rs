@@ -4,6 +4,8 @@
 //! Prepare a Rust project for greatness.
 
 mod cmd;
+mod config;
+mod session;
 mod ui;
 
 use clap::{CommandFactory, FromArgMatches, Parser, Subcommand};
@@ -11,6 +13,7 @@ use clap::{CommandFactory, FromArgMatches, Parser, Subcommand};
 use ui::help;
 
 use crate::cmd::CargoTargets;
+use crate::session::Session;
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -42,6 +45,11 @@ enum Commands {
         #[arg(short, long)]
         check: bool,
     },
+    #[command()]
+    Init {
+        #[arg(short, long, default_value_t = false)]
+        force: bool,
+    },
 }
 
 fn main() -> anyhow::Result<()> {
@@ -54,13 +62,16 @@ fn main() -> anyhow::Result<()> {
         return Ok(());
     };
 
+    let session = Session::initialize()?;
+
     match command {
         Commands::Ci {
             extended,
             no_fail_fast,
-        } => cmd::ci::run(extended, !no_fail_fast),
-        Commands::Clippy { targets, strict } => cmd::clippy::run(targets, strict),
-        Commands::Copyright => cmd::copyright::run(),
-        Commands::Format { check } => cmd::format::run(check),
+        } => cmd::ci::run(&session, extended, !no_fail_fast),
+        Commands::Clippy { targets, strict } => cmd::clippy::run(&session, targets, strict),
+        Commands::Copyright => cmd::copyright::run(&session),
+        Commands::Format { check } => cmd::format::run(&session, check),
+        Commands::Init { force } => cmd::init::run(&session, force),
     }
 }

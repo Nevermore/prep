@@ -4,7 +4,10 @@
 
 ### Added
 
+* `init` command to set up custom per-project Prep configuration. ([#23] by [@xStrom])
+* `copyright` command to easily verify that all Rust source files have correct copyright headers. ([#22] by [@xStrom])
 * `--crates <main|aux|all>` option to the `clippy` command. ([#18] by [@xStrom])
+* Ability to run from within a sub-directory of a workspace as opposed to just from the workspace root. ([#23] by [@xStrom])
 
 ### Changed
 
@@ -24,6 +27,8 @@
 [#3]: https://github.com/Nevermore/prep/pull/3
 [#5]: https://github.com/Nevermore/prep/pull/5
 [#18]: https://github.com/Nevermore/prep/pull/18
+[#22]: https://github.com/Nevermore/prep/pull/22
+[#23]: https://github.com/Nevermore/prep/pull/23
 
 [Unreleased]: https://github.com/Nevermore/prep/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/Nevermore/prep/compare/v0.0.0...v0.1.0
