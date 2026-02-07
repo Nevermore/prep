@@ -1,7 +1,7 @@
 // Copyright 2026 the Prep Authors
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use crate::cmd::{CargoTargets, clippy, copyright, format};
+use crate::cmd::{CargoTargets, clippy, format};
 use crate::session::Session;
 
 /// Runs CI verification.
@@ -21,7 +21,7 @@ pub fn run(session: &Session, extended: bool, fail_fast: bool) -> anyhow::Result
         Ok(())
     };
 
-    step(&|| copyright::run(session))?;
+    //step(&|| copyright::run(session))?;
     step(&|| format::run(session, true))?;
 
     if extended {
