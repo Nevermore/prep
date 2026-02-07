@@ -1,16 +1,15 @@
 // Copyright 2026 the Prep Authors
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::process::Command;
-
 use anyhow::{Context, ensure};
 
 use crate::session::Session;
+use crate::tools::cargo;
 use crate::ui;
 
 /// Format the workspace
 pub fn run(session: &Session, check: bool) -> anyhow::Result<()> {
-    let mut cmd = Command::new("cargo");
+    let mut cmd = cargo::new("")?;
     let mut cmd = cmd.current_dir(session.root_dir()).arg("fmt").arg("--all");
     if check {
         cmd = cmd.arg("--check");

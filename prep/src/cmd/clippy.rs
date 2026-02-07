@@ -1,19 +1,18 @@
 // Copyright 2026 the Prep Authors
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::process::Command;
-
 use anyhow::{Context, ensure};
 
 use crate::cmd::CargoTargets;
 use crate::session::Session;
+use crate::tools::cargo;
 use crate::ui;
 
 /// Runs Clippy analysis on the given `targets`.
 ///
 /// In `strict` mode warnings are treated as errors.
 pub fn run(session: &Session, targets: CargoTargets, strict: bool) -> anyhow::Result<()> {
-    let mut cmd = Command::new("cargo");
+    let mut cmd = cargo::new("")?;
     let mut cmd = cmd
         .current_dir(session.root_dir())
         .arg("clippy")
