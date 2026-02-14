@@ -227,6 +227,7 @@ dependencies = [
  "cargo_metadata",
  "clap",
  "regex",
+ "semver",
  "serde",
  "time",
  "toml",

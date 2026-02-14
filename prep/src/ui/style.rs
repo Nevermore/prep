@@ -54,3 +54,5 @@ pub const DEP_NORMAL: Style = Style::new().dimmed();
 pub const DEP_BUILD: Style = AnsiColor::Blue.on_default().bold();
 pub const DEP_DEV: Style = AnsiColor::Cyan.on_default().bold();
 pub const DEP_FEATURE: Style = AnsiColor::Magenta.on_default().dimmed();
+
+pub const TABLE_HEADER: Style = Style::new().bold().underline();

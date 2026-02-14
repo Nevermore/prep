@@ -22,6 +22,8 @@ pub fn set(cmd: Command) -> Command {
             scmd.override_help(format_msg())
         } else if name == "init" {
             scmd.override_help(init_msg())
+        } else if name == "tools" {
+            scmd.override_help(tools_msg())
         } else {
             panic!("Sub-command '{name}' help message is not implemented");
         }
@@ -86,11 +88,11 @@ Analyze the Rust workspace with Clippy.
 ···      ····· {l}prep clippy{l:#} {p}[options]{p:#}
 
 {h}Options:{h:#}
+  {l}-s   --strict        {l:#}Use locked Rust toolchain version and treat warnings as errors.
   {l}-c   --crates <val>  {l:#}Target specified crates. Possible values:
   ···                     ·····{p}main{p:#} -> Binaries and the main library. (default)
   ···                     ·····{p}aux{p:#}  -> Examples, tests, and benches.
   ···                     ·····{p}all{p:#}  -> All of the above.
-  {l}-s   --strict        {l:#}Treat warnings as errors.
   {l}-h   --help          {l:#}Print this help message.
 "
     )
@@ -109,6 +111,7 @@ Verify that all Rust source files have the correct copyright header.
 {h}Usage:{h:#} {l}prep copyright{l:#}
 
 {h}Options:{h:#}
+  {l}-s   --strict        {l:#}Use locked ripgrep version.
   {l}-h   --help          {l:#}Print this help message.
 "
     )
@@ -128,6 +131,7 @@ Format the Rust workspace with rustfmt.
 ···      ····· {l}prep format{l:#} {p}[options]{p:#}
 
 {h}Options:{h:#}
+  {l}-s   --strict        {l:#}Use locked Rust toolchain version.
   {l}-c   --check         {l:#}Verify that the workspace is already formatted.
   {l}-h   --help          {l:#}Print this help message.
 "
@@ -152,6 +156,27 @@ Initialize Prep configuration for this Rust workspace.
 "
     )
     .replace("·", "");
+
+    StyledStr::from(help)
+}
+
+/// Returns the tools help message.
+pub fn tools_msg() -> StyledStr {
+    let (h, l, p) = (HEADER, LITERAL, PLACEHOLDER);
+    let help = format!(
+        "\
+Manage all the tools that Prep uses.
+
+{h}Usage:{h:#} {l}prep tools{l:#} {p}[command] [options]{p:#}
+
+{h}Commands:{h:#}
+  {l}     list            {l:#}List information about all the tools.
+  {l}     help            {l:#}Print help for the provided command.
+
+{h}Options:{h:#}
+  {l}-h   --help          {l:#}Print help for the provided command.
+"
+    );
 
     StyledStr::from(help)
 }

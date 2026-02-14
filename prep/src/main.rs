@@ -7,6 +7,7 @@ mod cmd;
 mod config;
 mod session;
 mod tools;
+mod toolset;
 mod ui;
 
 use clap::{CommandFactory, FromArgMatches, Parser, Subcommand};
@@ -34,15 +35,20 @@ enum Commands {
     },
     #[command(alias = "clp")]
     Clippy {
+        #[arg(short, long)]
+        strict: bool,
         #[arg(name = "crates", short, long, value_enum, default_value_t = CargoTargets::Main)]
         targets: CargoTargets,
+    },
+    #[command()]
+    Copyright {
         #[arg(short, long)]
         strict: bool,
     },
-    #[command()]
-    Copyright,
     #[command(alias = "fmt")]
     Format {
+        #[arg(short, long)]
+        strict: bool,
         #[arg(short, long)]
         check: bool,
     },
@@ -51,6 +57,17 @@ enum Commands {
         #[arg(short, long, default_value_t = false)]
         force: bool,
     },
+    #[command()]
+    Tools {
+        #[command(subcommand)]
+        command: Option<ToolsCommands>,
+    },
+}
+
+#[derive(Subcommand)]
+enum ToolsCommands {
+    #[command()]
+    List,
 }
 
 fn main() -> anyhow::Result<()> {
@@ -59,20 +76,29 @@ fn main() -> anyhow::Result<()> {
     let cli = Cli::from_arg_matches(&matches).unwrap();
 
     let Some(command) = cli.command else {
-        ui::print_help();
+        ui::print_help(ui::help::root_msg());
         return Ok(());
     };
 
-    let session = Session::initialize()?;
+    let mut session = Session::initialize()?;
 
     match command {
         Commands::Ci {
             extended,
             no_fail_fast,
-        } => cmd::ci::run(&session, extended, !no_fail_fast),
-        Commands::Clippy { targets, strict } => cmd::clippy::run(&session, targets, strict),
-        Commands::Copyright => cmd::copyright::run(&session),
-        Commands::Format { check } => cmd::format::run(&session, check),
+        } => cmd::ci::run(&mut session, extended, !no_fail_fast),
+        Commands::Clippy { strict, targets } => cmd::clippy::run(&mut session, strict, targets),
+        Commands::Copyright { strict } => cmd::copyright::run(&mut session, strict),
+        Commands::Format { strict, check } => cmd::format::run(&mut session, strict, check),
         Commands::Init { force } => cmd::init::run(&session, force),
+        Commands::Tools { command } => {
+            let Some(command) = command else {
+                ui::print_help(ui::help::tools_msg());
+                return Ok(());
+            };
+            match command {
+                ToolsCommands::List => cmd::tools::list::run(&mut session),
+            }
+        }
     }
 }

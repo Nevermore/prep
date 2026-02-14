@@ -9,9 +9,9 @@ use crate::session::Session;
 /// Can be ran in `extended` mode for more thorough checks.
 ///
 /// Set `fail_fast` to `false` to run the checks to the end regardless of failure.
-pub fn run(session: &Session, extended: bool, fail_fast: bool) -> anyhow::Result<()> {
+pub fn run(session: &mut Session, extended: bool, fail_fast: bool) -> anyhow::Result<()> {
     let mut errs: Vec<anyhow::Error> = Vec::new();
-    let mut step = |f: &dyn Fn() -> anyhow::Result<()>| -> anyhow::Result<()> {
+    let mut step = |f: &mut dyn FnMut() -> anyhow::Result<()>| -> anyhow::Result<()> {
         if let Err(e) = f() {
             if fail_fast {
                 return Err(e);
@@ -22,16 +22,16 @@ pub fn run(session: &Session, extended: bool, fail_fast: bool) -> anyhow::Result
     };
 
     //step(&|| copyright::run(session))?;
-    step(&|| format::run(session, true))?;
+    step(&mut || format::run(session, true, true))?;
 
     if extended {
         // We need to avoid --all-targets because it will unify dev and regular dep features.
-        step(&|| clippy::run(session, CargoTargets::Main, true))?;
-        step(&|| clippy::run(session, CargoTargets::Auxiliary, true))?;
+        step(&mut || clippy::run(session, true, CargoTargets::Main))?;
+        step(&mut || clippy::run(session, true, CargoTargets::Auxiliary))?;
     } else {
         // Slightly faster due to shared build cache,
         // but will miss unified feature bugs.
-        step(&|| clippy::run(session, CargoTargets::All, true))?;
+        step(&mut || clippy::run(session, true, CargoTargets::All))?;
     }
 
     if errs.is_empty() {

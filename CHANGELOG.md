@@ -4,6 +4,9 @@
 
 ### Added
 
+* `tools` command for tool management. ([#27] by [@xStrom])
+* `--strict` option to `clippy`, `copyright`, and `format` commands to use locked tool versions. ([#27] by [@xStrom])
+
 ## [0.2.0] - 2026-02-07
 
 ### Added
@@ -35,6 +38,7 @@
 [#22]: https://github.com/Nevermore/prep/pull/22
 [#23]: https://github.com/Nevermore/prep/pull/23
 [#24]: https://github.com/Nevermore/prep/pull/24
+[#27]: https://github.com/Nevermore/prep/pull/27
 
 [Unreleased]: https://github.com/Nevermore/prep/compare/v0.2.0...HEAD
 [0.2.0]: https://github.com/Nevermore/prep/compare/v0.1.0...v0.2.0
