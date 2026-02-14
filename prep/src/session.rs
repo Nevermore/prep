@@ -10,7 +10,9 @@ use anyhow::{Context, Result, bail};
 use cargo_metadata::MetadataCommand;
 
 use crate::config::Config;
-use crate::tools::cargo;
+use crate::tools::Tool;
+use crate::tools::cargo::{Cargo, CargoDeps};
+use crate::toolset::Toolset;
 
 const PREP_DIR: &str = ".prep";
 const CONFIG_FILE: &str = "prep.toml";
@@ -26,6 +28,8 @@ pub struct Session {
 
     /// Active configuration.
     config: Config,
+    /// Toolset.
+    toolset: Toolset,
 }
 
 impl Session {
@@ -41,11 +45,14 @@ impl Session {
         let root_dir =
             find_root_dir(&current_dir).context("failed to look for Prep config file")?;
 
+        let mut toolset = Toolset::new();
+
         // Fall back to the Cargo workspace root
         let root_dir = match root_dir {
             Some(root_dir) => root_dir,
             None => {
-                let cmd = cargo::new("")?;
+                let cargo_deps = CargoDeps::new(None);
+                let cmd = toolset.get::<Cargo>(&cargo_deps, None)?;
                 let metadata = MetadataCommand::new()
                     .cargo_path(cmd.get_program())
                     .exec()
@@ -72,6 +79,7 @@ impl Session {
             prep_dir,
             config_path,
             config,
+            toolset,
         };
 
         Ok(session)
@@ -95,6 +103,11 @@ impl Session {
     /// Returns the project's prep config.
     pub fn config(&self) -> &Config {
         &self.config
+    }
+
+    /// Returns this session's toolset.
+    pub fn toolset(&mut self) -> &mut Toolset {
+        &mut self.toolset
     }
 
     /// Ensures that the prep directory exists.

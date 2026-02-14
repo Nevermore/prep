@@ -7,6 +7,8 @@ pub mod style;
 use std::ffi::OsStr;
 use std::process::Command;
 
+use clap::builder::StyledStr;
+
 /// Prints lines aligned lines with only the first line getting the header.
 pub fn print_lines(header: &str, lines: &str) {
     for (idx, line) in lines.split("\n").enumerate() {
@@ -47,7 +49,7 @@ pub fn print_warn(warn: &str) {
 }
 
 /// Prints the main help message.
-pub fn print_help() {
+pub fn print_help(msg: StyledStr) {
     // TODO: Don't print ANSI codes when not supported by the environment.
-    eprint!("{}", help::root_msg().ansi());
+    eprint!("{}", msg.ansi());
 }

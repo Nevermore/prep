@@ -14,11 +14,14 @@ use crate::ui::style::{ERROR, HEADER, LITERAL, NOTE};
 // TODO: Allow excluding files from the check
 
 /// Verify copyright headers.
-pub fn run(session: &Session) -> anyhow::Result<()> {
+///
+/// In `strict` mode ripgrep version is locked.
+pub fn run(session: &mut Session, _strict: bool) -> anyhow::Result<()> {
     let config = session.config();
     let project = config.project();
     let header_regex = header_regex(project.name(), project.license());
 
+    // TODO: Strict mode for ripgrep.
     let mut cmd = Command::new("rg");
     let cmd = cmd
         .current_dir(session.root_dir())
