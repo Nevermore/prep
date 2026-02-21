@@ -5,6 +5,7 @@
 
 mod cmd;
 mod config;
+mod host;
 mod session;
 mod tools;
 mod toolset;

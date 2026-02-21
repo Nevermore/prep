@@ -3,6 +3,7 @@
 
 use crate::session::Session;
 use crate::tools::cargo::Cargo;
+use crate::tools::ripgrep::Ripgrep;
 use crate::tools::rustup::Rustup;
 use crate::ui::style::TABLE_HEADER;
 
@@ -26,7 +27,10 @@ pub fn run(session: &mut Session) -> anyhow::Result<()> {
         .default_version::<Cargo>()?
         .map(|v| format!("{v}"))
         .unwrap_or_else(|| MISSING.into());
-    let rg_global = String::from("Who knows");
+    let rg_global = toolset
+        .default_version::<Ripgrep>()?
+        .map(|v| format!("{v}"))
+        .unwrap_or_else(|| MISSING.into());
 
     fn cell(s: &str, len: usize) -> String {
         let mut s = String::from(s);

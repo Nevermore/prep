@@ -8,11 +8,16 @@ use std::{env, fs};
 
 use anyhow::{Context, Result, bail};
 use cargo_metadata::MetadataCommand;
+use directories::ProjectDirs;
 
 use crate::config::Config;
 use crate::tools::Tool;
 use crate::tools::cargo::{Cargo, CargoDeps};
 use crate::toolset::Toolset;
+
+const ORG_TLD: &str = "ee";
+const ORG_NAME: &str = "Nevermore";
+const APP_NAME: &str = "Prep";
 
 const PREP_DIR: &str = ".prep";
 const CONFIG_FILE: &str = "prep.toml";
@@ -25,6 +30,8 @@ pub struct Session {
     prep_dir: PathBuf,
     /// The project's prep config path.
     config_path: PathBuf,
+    /// OS specific directories.
+    project_dirs: ProjectDirs,
 
     /// Active configuration.
     config: Config,
@@ -45,7 +52,11 @@ impl Session {
         let root_dir =
             find_root_dir(&current_dir).context("failed to look for Prep config file")?;
 
-        let mut toolset = Toolset::new();
+        let project_dirs = ProjectDirs::from(ORG_TLD, ORG_NAME, APP_NAME)
+            .context("failed to get OS specific directories")?;
+        let tools_dir = project_dirs.data_local_dir().to_path_buf();
+
+        let mut toolset = Toolset::new(tools_dir).context("failed to initialize toolset")?;
 
         // Fall back to the Cargo workspace root
         let root_dir = match root_dir {
@@ -78,6 +89,7 @@ impl Session {
             root_dir,
             prep_dir,
             config_path,
+            project_dirs,
             config,
             toolset,
         };
@@ -100,6 +112,11 @@ impl Session {
         &self.config_path
     }
 
+    /// Returns the OS-specific directories.
+    pub fn project_dirs(&self) -> &ProjectDirs {
+        &self.project_dirs
+    }
+
     /// Returns the project's prep config.
     pub fn config(&self) -> &Config {
         &self.config
@@ -114,13 +131,13 @@ impl Session {
     pub fn ensure_prep_dir(&self) -> Result<()> {
         if !self.prep_dir.exists() {
             fs::create_dir(&self.prep_dir).context(format!(
-                "failed to create Prep directory: {:?}",
-                self.prep_dir
+                "failed to create Prep directory: {}",
+                self.prep_dir.display()
             ))?;
         } else if !self.prep_dir.is_dir() {
             bail!(
-                "Prep directory path taken but not a directory: {:?}",
-                self.prep_dir
+                "Prep directory path taken but not a directory: {}",
+                self.prep_dir.display()
             );
         }
         Ok(())
@@ -128,8 +145,10 @@ impl Session {
 
     /// Loads the configuration from file.
     pub fn load_config(config_path: &Path) -> anyhow::Result<Config> {
-        let config_toml = fs::read(config_path)
-            .context(format!("failed to read config file: {:?}", config_path))?;
+        let config_toml = fs::read(config_path).context(format!(
+            "failed to read config file '{}'",
+            config_path.display()
+        ))?;
         let config: Config =
             toml::from_slice(&config_toml).context("failed to parse config TOML")?;
         Ok(config)
@@ -141,8 +160,8 @@ impl Session {
         let config_toml =
             toml::to_string(&self.config).context("failed to generate config TOML")?;
         fs::write(&self.config_path, &config_toml).context(format!(
-            "failed to write config file: {:?}",
-            self.config_path
+            "failed to write config file '{}'",
+            self.config_path.display()
         ))?;
         Ok(())
     }
