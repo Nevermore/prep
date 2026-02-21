@@ -1,12 +1,12 @@
 // Copyright 2026 the Prep Authors
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::process::Command;
-
 use anyhow::{Context, bail, ensure};
 use time::UtcDateTime;
 
 use crate::session::Session;
+use crate::tools::cargo::CargoDeps;
+use crate::tools::ripgrep::{Ripgrep, RipgrepDeps};
 use crate::ui;
 use crate::ui::style::{ERROR, HEADER, LITERAL, NOTE};
 
@@ -16,13 +16,26 @@ use crate::ui::style::{ERROR, HEADER, LITERAL, NOTE};
 /// Verify copyright headers.
 ///
 /// In `strict` mode ripgrep version is locked.
-pub fn run(session: &mut Session, _strict: bool) -> anyhow::Result<()> {
-    let config = session.config();
-    let project = config.project();
+pub fn run(session: &mut Session, strict: bool) -> anyhow::Result<()> {
+    let mut cmd = if strict {
+        let tools_cfg = session.config().tools();
+        let cargo_ver_req = tools_cfg.rust().clone();
+        let rustup_ver_req = tools_cfg.rustup().clone();
+        let ver_req = tools_cfg.ripgrep().clone();
+        let toolset = session.toolset();
+        let cargo_deps = CargoDeps::new(rustup_ver_req);
+        let deps = RipgrepDeps::new(cargo_deps, cargo_ver_req);
+        toolset.get::<Ripgrep>(&deps, &ver_req)?
+    } else {
+        let toolset = session.toolset();
+        let cargo_deps = CargoDeps::new(None);
+        let deps = RipgrepDeps::new(cargo_deps, None);
+        toolset.get::<Ripgrep>(&deps, None)?
+    };
+
+    let project = session.config().project();
     let header_regex = header_regex(project.name(), project.license());
 
-    // TODO: Strict mode for ripgrep.
-    let mut cmd = Command::new("rg");
     let cmd = cmd
         .current_dir(session.root_dir())
         .arg(header_regex)

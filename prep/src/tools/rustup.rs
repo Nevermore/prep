@@ -1,6 +1,8 @@
 // Copyright 2026 the Prep Authors
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use std::path::PathBuf;
+
 use anyhow::{Context, Result, bail};
 use semver::{Version, VersionReq};
 
@@ -8,22 +10,23 @@ use crate::tools::Tool;
 use crate::toolset::Toolset;
 use crate::ui;
 
+/// Rustup for installing and managing Rust toolchains.
 pub struct Rustup;
 
 impl Tool for Rustup {
     type Deps = ();
 
-    const NAME: &str = "Rustup";
+    const NAME: &str = "rustup";
     const BIN: &str = "rustup";
 
     fn set_up(
         toolset: &mut Toolset,
         _deps: &Self::Deps,
         ver_req: &VersionReq,
-    ) -> Result<(Version, String)> {
+    ) -> Result<(Version, PathBuf)> {
         // Check if the default Rustup installation already meets the requirement.
         let version = toolset
-            .verify::<Self>(Self::BIN, ver_req)
+            .verify::<Self>(&PathBuf::from(Self::BIN), ver_req)
             .context(format!("failed to verify {}", Self::NAME))?;
         let Some(version) = version else {
             ui::print_err(

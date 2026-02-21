@@ -1,6 +1,8 @@
 // Copyright 2026 the Prep Authors
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use std::path::PathBuf;
+
 use anyhow::{Context, Result, bail, ensure};
 use semver::{Op, Version, VersionReq};
 
@@ -32,17 +34,18 @@ impl CargoDeps {
 impl Tool for Cargo {
     type Deps = CargoDeps;
 
-    const NAME: &str = "Cargo";
+    const NAME: &str = "cargo";
     const BIN: &str = "cargo";
 
     fn set_up(
         toolset: &mut Toolset,
         deps: &Self::Deps,
         ver_req: &VersionReq,
-    ) -> Result<(Version, String)> {
+    ) -> Result<(Version, PathBuf)> {
         if ver_req.comparators.len() != 1 {
             bail!(
-                "Only simple `=MAJOR.MINOR` version requirements are supported for the Rust toolchain"
+                "Only simple `=MAJOR.MINOR` version requirements are supported for the Rust toolchain, got: {}",
+                ver_req
             );
         }
         let ver_req_comp = ver_req.comparators.first().unwrap();
@@ -52,7 +55,8 @@ impl Tool for Cargo {
             || !ver_req_comp.pre.is_empty()
         {
             bail!(
-                "Only simple `=MAJOR.MINOR` version requirements are supported for the Rust toolchain"
+                "Only simple `=MAJOR.MINOR` version requirements are supported for the Rust toolchain, got: {}",
+                ver_req_comp
             );
         }
         let toolchain_ver = format!("{}.{}", ver_req_comp.major, ver_req_comp.minor.unwrap());
@@ -80,18 +84,19 @@ impl Tool for Cargo {
         let path = String::from_utf8(output.stdout)
             .context(format!("{} output not valid UTF-8", Rustup::NAME))?;
         let path = path.trim();
+        let path = PathBuf::from(path);
 
         let Some(version) = toolset
-            .verify::<Self>(path, ver_req)
+            .verify::<Self>(&path, ver_req)
             .context(format!("failed to verify {}", Self::NAME))?
         else {
             bail!(
                 "{} was reported by {} but it doesn't seem to exist",
-                path,
+                path.display(),
                 Rustup::NAME
             );
         };
 
-        Ok((version, path.into()))
+        Ok((version, path))
     }
 }

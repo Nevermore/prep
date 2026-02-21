@@ -41,7 +41,6 @@ pub fn print_err(err: &str) {
 }
 
 /// Prints the warning with a colored prefix.
-#[expect(unused, reason = "for the future")]
 pub fn print_warn(warn: &str) {
     let w = style::WARN;
     let header = format!("     {w}Warning{w:#}");

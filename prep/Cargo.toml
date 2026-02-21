@@ -22,8 +22,9 @@ workspace = true
 anyhow.workspace = true
 cargo_metadata.workspace = true
 clap = { workspace = true, features = ["derive"] }
+directories.workspace = true
 regex.workspace = true
 semver.workspace = true
 serde = { workspace = true, features = ["derive"] }
-time.workspace = true
+time = { workspace = true, features = ["serde", "serde-human-readable"] }
 toml.workspace = true

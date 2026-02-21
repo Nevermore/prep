@@ -5,4 +5,4 @@ license = "Apache-2.0 OR MIT"
 [tools]
 rustup = "=1"
 rust = "=1.93"
-ripgrep = "=14.1.1"
+ripgrep = "=15.1.0"
