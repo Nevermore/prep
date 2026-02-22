@@ -1,13 +1,11 @@
 // Copyright 2026 the Prep Authors
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::path::PathBuf;
-
 use anyhow::{Context, Result, bail, ensure};
 use semver::{Op, Version, VersionReq};
 
-use crate::tools::Tool;
 use crate::tools::rustup::Rustup;
+use crate::tools::{BinCtx, Tool};
 use crate::toolset::Toolset;
 use crate::ui;
 
@@ -15,18 +13,22 @@ use crate::ui;
 pub struct Cargo;
 
 /// Cargo dependencies.
+#[derive(Default)]
 pub struct CargoDeps {
     /// Rustup version requirement.
     rustup_ver_req: Option<VersionReq>,
+    /// Rust toolchain components.
+    components: Vec<String>,
 }
 
 impl CargoDeps {
     /// Creates new Cargo dependency requirements.
     ///
     /// `None` means that the default version will be used.
-    pub fn new(rustup_ver_req: impl Into<Option<VersionReq>>) -> Self {
+    pub fn new(rustup_ver_req: impl Into<Option<VersionReq>>, components: Vec<String>) -> Self {
         Self {
             rustup_ver_req: rustup_ver_req.into(),
+            components,
         }
     }
 }
@@ -36,12 +38,13 @@ impl Tool for Cargo {
 
     const NAME: &str = "cargo";
     const BIN: &str = "cargo";
+    const MANAGED: bool = false;
 
     fn set_up(
         toolset: &mut Toolset,
         deps: &Self::Deps,
         ver_req: &VersionReq,
-    ) -> Result<(Version, PathBuf)> {
+    ) -> Result<(BinCtx, Version)> {
         if ver_req.comparators.len() != 1 {
             bail!(
                 "Only simple `=MAJOR.MINOR` version requirements are supported for the Rust toolchain, got: {}",
@@ -59,44 +62,57 @@ impl Tool for Cargo {
                 ver_req_comp
             );
         }
-        let toolchain_ver = format!("{}.{}", ver_req_comp.major, ver_req_comp.minor.unwrap());
+        let toolchain_name = format!("{}.{}", ver_req_comp.major, ver_req_comp.minor.unwrap());
 
-        // TODO: Call rustup toolchain install with correct components etc first
+        // TODO: Maybe worth checking if it's already installed first? A non-network command probably then.
+        // TODO: Perhaps worth doing component delta checks and using the component commands to manage them.
+        //       Because then there wouldn't be a toolchain 1.92.0 -> 1.92.1 update just because of component.
 
-        let mut cmd = toolset.get::<Rustup>(&(), deps.rustup_ver_req.as_ref())?;
-        let cmd = cmd
-            .arg("which")
-            .arg(Self::BIN)
-            .args(["--toolchain", &toolchain_ver]);
+        // Set up the toolchain
+        let rustup = toolset.get::<Rustup>(&(), deps.rustup_ver_req.as_ref())?;
+        let mut cmd = rustup.cmd();
+        cmd.arg("toolchain")
+            .arg("install")
+            .arg(&toolchain_name)
+            .arg("--no-self-update")
+            .args(["--profile", "minimal"]);
 
-        ui::print_cmd(cmd);
+        if !deps.components.is_empty() {
+            cmd.args(["--component", &deps.components.join(",")]);
+        }
 
-        let output = cmd
-            .output()
+        ui::print_cmd(&cmd);
+
+        let status = cmd
+            .status()
             .context(format!("failed to run {}", Rustup::NAME))?;
-        ensure!(
-            output.status.success(),
-            "{} failed: {}",
-            Rustup::NAME,
-            output.status
+        ensure!(status.success(), "{} failed: {status}", Rustup::NAME);
+
+        // We need to configure the toolchain version via an environment variable.
+        // This is because we want to run the correct rustfmt version when invoking `cargo fmt`.
+        // Directly running the correct cargo executable is not enough
+        // as it will still choose the default version of rustfmt.
+        // Unlike things like cargo-clippy or cargo-nextest, `cargo fmt` is not
+        // just a simple wrapper over rustfmt so we can't easily run it directly.
+        let environment = toolset.environment().clone().rust(Some(toolchain_name));
+        // Given that we use the environment for version control, we'll just use the binary name.
+        let binctx = BinCtx::new(
+            Self::BIN.into(),
+            toolset.working_dir().to_path_buf(),
+            environment,
         );
 
-        let path = String::from_utf8(output.stdout)
-            .context(format!("{} output not valid UTF-8", Rustup::NAME))?;
-        let path = path.trim();
-        let path = PathBuf::from(path);
-
+        // Verify that it actually works.
         let Some(version) = toolset
-            .verify::<Self>(&path, ver_req)
+            .verify::<Self>(&binctx, ver_req)
             .context(format!("failed to verify {}", Self::NAME))?
         else {
             bail!(
-                "{} was reported by {} but it doesn't seem to exist",
-                path.display(),
-                Rustup::NAME
+                "'{}' was just installed but now was no longer found",
+                binctx.path().display()
             );
         };
 
-        Ok((version, path))
+        Ok((binctx, version))
     }
 }

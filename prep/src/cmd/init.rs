@@ -1,11 +1,13 @@
 // Copyright 2026 the Prep Authors
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use anyhow::Result;
+
 use crate::session::Session;
 use crate::ui;
 
 /// Initialize the prep configuration
-pub fn run(session: &Session, force: bool) -> anyhow::Result<()> {
+pub fn run(session: &Session, force: bool) -> Result<()> {
     if !force && session.config_path().exists() {
         ui::print_err(
             "Prep configuration already exists, aborting.\n\

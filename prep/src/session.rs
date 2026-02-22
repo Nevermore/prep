@@ -11,6 +11,7 @@ use cargo_metadata::MetadataCommand;
 use directories::ProjectDirs;
 
 use crate::config::Config;
+use crate::environment::Environment;
 use crate::tools::Tool;
 use crate::tools::cargo::{Cargo, CargoDeps};
 use crate::toolset::Toolset;
@@ -44,6 +45,9 @@ impl Session {
     ///
     /// This function will also Load the configuration file.
     pub fn initialize() -> Result<Session> {
+        // Initialize the default environment variables.
+        let environment = Environment::new();
+
         // Attempt to find an existing config file
         let current_dir = env::current_dir().context("failed to get current directory")?;
         let current_dir = current_dir
@@ -52,20 +56,15 @@ impl Session {
         let root_dir =
             find_root_dir(&current_dir).context("failed to look for Prep config file")?;
 
-        let project_dirs = ProjectDirs::from(ORG_TLD, ORG_NAME, APP_NAME)
-            .context("failed to get OS specific directories")?;
-        let tools_dir = project_dirs.data_local_dir().to_path_buf();
-
-        let mut toolset = Toolset::new(tools_dir).context("failed to initialize toolset")?;
-
         // Fall back to the Cargo workspace root
         let root_dir = match root_dir {
             Some(root_dir) => root_dir,
             None => {
-                let cargo_deps = CargoDeps::new(None);
-                let cmd = toolset.get::<Cargo>(&cargo_deps, None)?;
-                let metadata = MetadataCommand::new()
-                    .cargo_path(cmd.get_program())
+                let mut metadata_cmd = MetadataCommand::new();
+                for (k, v) in environment.vars() {
+                    metadata_cmd.env(k, v);
+                }
+                let metadata = metadata_cmd
                     .exec()
                     .context("failed to fetch Cargo metadata")?;
                 let workspace_dir = metadata.workspace_root.into_std_path_buf();
@@ -84,6 +83,13 @@ impl Session {
         } else {
             Config::new()
         };
+
+        let project_dirs = ProjectDirs::from(ORG_TLD, ORG_NAME, APP_NAME)
+            .context("failed to get OS specific directories")?;
+        let tools_dir = project_dirs.data_local_dir().to_path_buf();
+
+        let mut toolset = Toolset::new(tools_dir, root_dir.clone(), environment)
+            .context("failed to initialize toolset")?;
 
         let session = Session {
             root_dir,
@@ -144,7 +150,7 @@ impl Session {
     }
 
     /// Loads the configuration from file.
-    pub fn load_config(config_path: &Path) -> anyhow::Result<Config> {
+    pub fn load_config(config_path: &Path) -> Result<Config> {
         let config_toml = fs::read(config_path).context(format!(
             "failed to read config file '{}'",
             config_path.display()
@@ -155,7 +161,7 @@ impl Session {
     }
 
     /// Saves the configuration to file.
-    pub fn save_config(&self) -> anyhow::Result<()> {
+    pub fn save_config(&self) -> Result<()> {
         self.ensure_prep_dir()?;
         let config_toml =
             toml::to_string(&self.config).context("failed to generate config TOML")?;
@@ -168,7 +174,7 @@ impl Session {
 }
 
 /// Returns the root directory that contains the prep directory with a config file.
-fn find_root_dir(dir: &Path) -> anyhow::Result<Option<PathBuf>> {
+fn find_root_dir(dir: &Path) -> Result<Option<PathBuf>> {
     let p = dir.join(PREP_DIR).join(CONFIG_FILE);
     if p.is_file() {
         return Ok(Some(dir.to_path_buf()));

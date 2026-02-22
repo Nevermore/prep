@@ -1,12 +1,10 @@
 // Copyright 2026 the Prep Authors
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::path::PathBuf;
-
 use anyhow::{Context, Result, bail};
 use semver::{Version, VersionReq};
 
-use crate::tools::Tool;
+use crate::tools::{BinCtx, Tool};
 use crate::toolset::Toolset;
 use crate::ui;
 
@@ -18,17 +16,20 @@ impl Tool for Rustup {
 
     const NAME: &str = "rustup";
     const BIN: &str = "rustup";
+    const MANAGED: bool = false;
 
     fn set_up(
         toolset: &mut Toolset,
-        _deps: &Self::Deps,
+        deps: &Self::Deps,
         ver_req: &VersionReq,
-    ) -> Result<(Version, PathBuf)> {
+    ) -> Result<(BinCtx, Version)> {
         // Check if the default Rustup installation already meets the requirement.
-        let version = toolset
-            .verify::<Self>(&PathBuf::from(Self::BIN), ver_req)
-            .context(format!("failed to verify {}", Self::NAME))?;
-        let Some(version) = version else {
+        let binctx = Self::default_binctx(toolset, deps)?;
+
+        let Some(version) = toolset
+            .verify::<Self>(&binctx, ver_req)
+            .context(format!("failed to verify {}", Self::NAME))?
+        else {
             ui::print_err(
                 "\
 				Prep requires rustup to function.\n\
@@ -42,6 +43,7 @@ impl Tool for Rustup {
             );
             bail!("{} not found", Self::NAME);
         };
-        Ok((version, Self::BIN.into()))
+
+        Ok((binctx, version))
     }
 }

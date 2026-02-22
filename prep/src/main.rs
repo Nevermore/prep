@@ -5,12 +5,14 @@
 
 mod cmd;
 mod config;
+mod environment;
 mod host;
 mod session;
 mod tools;
 mod toolset;
 mod ui;
 
+use anyhow::Result;
 use clap::{CommandFactory, FromArgMatches, Parser, Subcommand};
 
 use ui::help;
@@ -71,7 +73,7 @@ enum ToolsCommands {
     List,
 }
 
-fn main() -> anyhow::Result<()> {
+fn main() -> Result<()> {
     let ccmd = help::set(Cli::command());
     let matches = ccmd.get_matches();
     let cli = Cli::from_arg_matches(&matches).unwrap();

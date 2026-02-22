@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use anyhow::{Context, Result, bail, ensure};
 use semver::{Op, Version, VersionReq};
 
-use crate::tools::Tool;
 use crate::tools::cargo::{Cargo, CargoDeps};
+use crate::tools::{BinCtx, Tool};
 use crate::toolset::Toolset;
 use crate::{host, ui};
 
@@ -16,6 +16,7 @@ use crate::{host, ui};
 pub struct Ripgrep;
 
 /// Ripgrep dependencies.
+#[derive(Default)]
 pub struct RipgrepDeps {
     /// Cargo dependencies.
     cargo_deps: CargoDeps,
@@ -40,12 +41,13 @@ impl Tool for Ripgrep {
 
     const NAME: &str = "ripgrep";
     const BIN: &str = "rg";
+    const MANAGED: bool = true;
 
     fn set_up(
         toolset: &mut Toolset,
         deps: &Self::Deps,
         ver_req: &VersionReq,
-    ) -> Result<(Version, PathBuf)> {
+    ) -> Result<(BinCtx, Version)> {
         if ver_req.comparators.len() != 1 {
             bail!(
                 "Only simple `=MAJOR.MINOR.PATCH` version requirements \
@@ -90,7 +92,7 @@ impl Tool for Ripgrep {
         }
 
         // Install it with Cargo
-        let mut cmd = toolset.get::<Cargo>(&deps.cargo_deps, deps.cargo_ver_req.as_ref())?;
+        let cargo = toolset.get::<Cargo>(&deps.cargo_deps, deps.cargo_ver_req.as_ref())?;
 
         let temp_install_dir = toolset.temp_install_dir(Self::NAME);
         if temp_install_dir.exists() && !empty_dir(&temp_install_dir)? {
@@ -102,15 +104,15 @@ impl Tool for Ripgrep {
             );
         }
 
-        let cmd = cmd
-            .arg("install")
+        let mut cmd = cargo.cmd();
+        cmd.arg("install")
             .arg(Self::NAME)
             .arg("--locked")
             .args(["--version", &version.to_string()])
             .arg("--root")
             .arg(temp_install_dir.as_os_str());
 
-        ui::print_cmd(cmd);
+        ui::print_cmd(&cmd);
 
         let status = cmd.status().context("failed to run cargo install")?;
         ensure!(status.success(), "cargo install failed: {status}");
@@ -168,16 +170,19 @@ impl Tool for Ripgrep {
         ))?;
 
         // Verify that the installed version is correct
-        let version = toolset
-            .verify::<Self>(&bin_dst, ver_req)
-            .context(format!("failed to verify {}", Self::NAME))?;
-        let Some(version) = version else {
+        let binctx = toolset.binctx(bin_dst);
+
+        let Some(version) = toolset
+            .verify::<Self>(&binctx, ver_req)
+            .context(format!("failed to verify {}", Self::NAME))?
+        else {
             bail!(
                 "'{}' was just installed but now was no longer found",
-                bin_dst.display()
+                binctx.path().display()
             );
         };
-        Ok((version, bin_dst))
+
+        Ok((binctx, version))
     }
 }
 
