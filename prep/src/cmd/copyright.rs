@@ -1,7 +1,7 @@
 // Copyright 2026 the Prep Authors
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use anyhow::{Context, bail, ensure};
+use anyhow::{Context, Result, bail, ensure};
 use time::UtcDateTime;
 
 use crate::session::Session;
@@ -16,19 +16,19 @@ use crate::ui::style::{ERROR, HEADER, LITERAL, NOTE};
 /// Verify copyright headers.
 ///
 /// In `strict` mode ripgrep version is locked.
-pub fn run(session: &mut Session, strict: bool) -> anyhow::Result<()> {
-    let mut cmd = if strict {
+pub fn run(session: &mut Session, strict: bool) -> Result<()> {
+    let ripgrep = if strict {
         let tools_cfg = session.config().tools();
         let cargo_ver_req = tools_cfg.rust().clone();
         let rustup_ver_req = tools_cfg.rustup().clone();
         let ver_req = tools_cfg.ripgrep().clone();
         let toolset = session.toolset();
-        let cargo_deps = CargoDeps::new(rustup_ver_req);
+        let cargo_deps = CargoDeps::new(rustup_ver_req, vec![]);
         let deps = RipgrepDeps::new(cargo_deps, cargo_ver_req);
         toolset.get::<Ripgrep>(&deps, &ver_req)?
     } else {
         let toolset = session.toolset();
-        let cargo_deps = CargoDeps::new(None);
+        let cargo_deps = CargoDeps::new(None, vec![]);
         let deps = RipgrepDeps::new(cargo_deps, None);
         toolset.get::<Ripgrep>(&deps, None)?
     };
@@ -36,15 +36,14 @@ pub fn run(session: &mut Session, strict: bool) -> anyhow::Result<()> {
     let project = session.config().project();
     let header_regex = header_regex(project.name(), project.license());
 
-    let cmd = cmd
-        .current_dir(session.root_dir())
-        .arg(header_regex)
+    let mut cmd = ripgrep.cmd();
+    cmd.arg(header_regex)
         .arg("--files-without-match")
         .arg("--multiline")
         .args(["-g", "*.rs"])
         .arg(".");
 
-    ui::print_cmd(cmd);
+    ui::print_cmd(&cmd);
 
     let output = cmd.output().context("failed to run ripgrep")?;
 

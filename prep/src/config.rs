@@ -26,6 +26,8 @@ pub struct Project {
     license: String,
 }
 
+// TODO: Refactor these away from VersionReq, as Rust toolchain specification is needed instead.
+
 /// Tools configuration.
 #[derive(Serialize, Deserialize)]
 pub struct Tools {

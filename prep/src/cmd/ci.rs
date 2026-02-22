@@ -1,6 +1,8 @@
 // Copyright 2026 the Prep Authors
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use anyhow::Result;
+
 use crate::cmd::{CargoTargets, clippy, copyright, format};
 use crate::session::Session;
 
@@ -9,9 +11,9 @@ use crate::session::Session;
 /// Can be ran in `extended` mode for more thorough checks.
 ///
 /// Set `fail_fast` to `false` to run the checks to the end regardless of failure.
-pub fn run(session: &mut Session, extended: bool, fail_fast: bool) -> anyhow::Result<()> {
+pub fn run(session: &mut Session, extended: bool, fail_fast: bool) -> Result<()> {
     let mut errs: Vec<anyhow::Error> = Vec::new();
-    let mut step = |f: &mut dyn FnMut() -> anyhow::Result<()>| -> anyhow::Result<()> {
+    let mut step = |f: &mut dyn FnMut() -> Result<()>| -> Result<()> {
         if let Err(e) = f() {
             if fail_fast {
                 return Err(e);

@@ -22,12 +22,18 @@ pub fn print_lines(header: &str, lines: &str) {
 
 /// Prints the binary name and its arguments to stderr.
 pub fn print_cmd(cmd: &Command) {
+    let envs = cmd
+        .get_envs()
+        .map(|(k, v)| format!("{}={}", k.display(), v.unwrap_or_default().display()))
+        .collect::<Vec<_>>()
+        .join(" ");
     let bin = cmd.get_program();
     let args = cmd.get_args().collect::<Vec<_>>().join(OsStr::new(" "));
 
     let h = style::HEADER;
     eprintln!(
-        "     {h}Running{h:#} `{} {}`",
+        "     {h}Running{h:#} `{} {} {}`",
+        envs,
         bin.display(),
         args.display()
     );

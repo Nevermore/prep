@@ -4,14 +4,14 @@
 use std::collections::{BTreeMap, HashMap};
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::process::Command;
 
 use anyhow::{Context, Result, bail};
 use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
 use time::{Date, UtcDateTime};
 
-use crate::tools::Tool;
+use crate::environment::Environment;
+use crate::tools::{BinCtx, Tool};
 use crate::ui;
 
 const MANIFEST_NAME: &str = "tools.toml";
@@ -19,20 +19,28 @@ const MANIFEST_NAME: &str = "tools.toml";
 /// Collection of tools.
 pub struct Toolset {
     tools_dir: PathBuf,
+    working_dir: PathBuf,
     manifest_path: PathBuf,
 
     manifest: Manifest,
 
-    /// Per-tool, per-version, binary executable paths.
+    environment: Environment,
+
+    /// Binary context mapping to its info.
     ///
-    /// All the entries in this registry have been verified to exist and be the correct version.
+    /// All the entries in this map have been verified to exist and be the specified version.
     /// With that verification having happened during the lifetime of this specific process.
-    path_registry: HashMap<String, BTreeMap<Version, PathBuf>>,
+    bins: HashMap<BinCtx, BinInfo>,
+}
+
+struct BinInfo {
+    name: String,
+    version: Version,
 }
 
 impl Toolset {
     /// Creates a new toolset.
-    pub fn new(tools_dir: PathBuf) -> Result<Self> {
+    pub fn new(tools_dir: PathBuf, working_dir: PathBuf, environment: Environment) -> Result<Self> {
         let manifest_path = tools_dir.join(MANIFEST_NAME);
 
         // Attempt to load the manifest
@@ -44,17 +52,29 @@ impl Toolset {
 
         let this = Self {
             tools_dir,
+            working_dir,
             manifest_path,
             manifest,
-            path_registry: HashMap::new(),
+            environment,
+            bins: HashMap::new(),
         };
 
         Ok(this)
     }
 
-    /// Returns the verified, tool-specific, version->path map.
-    fn tool_paths<T: Tool>(&mut self) -> &mut BTreeMap<Version, PathBuf> {
-        self.path_registry.entry(T::NAME.to_string()).or_default()
+    /// Returns a reference to the default environment.
+    pub fn environment(&self) -> &Environment {
+        &self.environment
+    }
+
+    /// Returns the default working directory.
+    pub fn working_dir(&self) -> &Path {
+        &self.working_dir
+    }
+
+    /// Returns a new [`BinCtx`] with default working dir and environment variables.
+    pub fn binctx(&self, path: PathBuf) -> BinCtx {
+        BinCtx::new(path, self.working_dir.clone(), self.environment.clone())
     }
 
     /// Get a specific tool that meets the given version requirement
@@ -65,53 +85,58 @@ impl Toolset {
         &mut self,
         deps: &T::Deps,
         ver_req: impl Into<Option<&'a VersionReq>>,
-    ) -> Result<Command> {
+    ) -> Result<BinCtx> {
         // Check if we can just return the default version,
         // i.e. just the binary name with no detailed path.
         let Some(ver_req) = ver_req.into() else {
-            return Ok(Command::new(T::BIN));
+            return T::default_binctx(self, deps);
         };
 
         // A specific version requirement was provided.
-        // First check if we have already used this tool during this session.
-        let paths = self.tool_paths::<T>();
-        // Iterate in reverse because we want to match with the highest possible version.
-        for (version, path) in paths.iter().rev() {
-            if ver_req.matches(version) {
-                return Ok(Command::new(path));
-            }
+        // First check if we have already used a version of this tool
+        // during this session which meets the requirements.
+        if let Some(binctx) = self
+            .bins
+            .iter()
+            .find(|(_, info)| info.name == T::NAME && ver_req.matches(&info.version))
+            .map(|(binctx, _)| binctx)
+        {
+            return Ok(binctx.clone());
         }
 
         let today = UtcDateTime::now().date();
 
-        // No satisfactory version in the registry yet.
+        // No immediately usable version satisfies the requirements.
         // Check if our manifest has any installation info that matches this requirement.
-        if let Some((version, path)) = self.manifest.get(T::NAME, ver_req) {
+        if T::MANAGED
+            && let Some((version, path)) = self.manifest.get(T::NAME, ver_req)
+        {
             // Relative paths are relative to the tools directory.
             let path = if path.is_relative() {
                 self.tools_dir.join(path)
             } else {
                 path
             };
+            let binctx = self.binctx(path);
             // Verify that it still exists and is the correct version.
             let exact_ver_req = VersionReq::parse(&format!("={}", version)).context(format!(
                 "failed to convert version '{}' to exact version requirement",
                 version
             ))?;
-            if self.verify::<T>(&path, &exact_ver_req)?.is_some() {
+            if self.verify::<T>(&binctx, &exact_ver_req)?.is_some() {
                 // Check whether the last use date in the manifest needs updating.
                 if self.manifest.mark_used(T::NAME, &version, today) {
                     self.save_manifest()
                         .context("failed to save tool manifest")?;
                 }
-                return Ok(Command::new(path));
+                return Ok(binctx);
             } else {
                 // It no longer exists, remove the manifest entry.
                 ui::print_warn(&format!(
                     "{} {} installation at '{}' no longer exists, removing it from the manifest",
                     T::NAME,
                     version,
-                    path.display()
+                    binctx.path().display()
                 ));
                 if self.manifest.remove(T::NAME, &version) {
                     self.save_manifest()
@@ -122,22 +147,26 @@ impl Toolset {
 
         // No satisfactory version in the manifest either.
         // See if there is a default installation and if it meets the requirements.
+        let binctx = T::default_binctx(self, deps)?;
         if let Some(version) = self
-            .default_version::<T>()
+            .version::<T>(&binctx)
             .context(format!("failed to get the default {} version", T::NAME))?
             && ver_req.matches(&version)
         {
-            return Ok(Command::new(T::BIN));
+            return Ok(binctx);
         }
 
         // No satisfactory available anywhere, need to set it up.
-        let (version, path) = T::set_up(self, deps, ver_req)?;
+        let (binctx, version) = T::set_up(self, deps, ver_req)?;
 
-        // Strip the tools directory prefix if it has it.
-        let save_path = path.strip_prefix(&self.tools_dir).unwrap_or(&path);
+        // Update the manifest if this tool is supposed to be managed by the toolset.
+        if T::MANAGED {
+            // Strip the tools directory prefix if it has it.
+            let save_path = binctx
+                .path()
+                .strip_prefix(&self.tools_dir)
+                .unwrap_or(binctx.path());
 
-        // Update the manifest if the save path is not literally just the binary name.
-        if save_path != T::BIN {
             self.manifest.set(
                 T::NAME.to_string(),
                 version.clone(),
@@ -149,7 +178,7 @@ impl Toolset {
         }
 
         // Return the result
-        Ok(Command::new(&path))
+        Ok(binctx)
     }
 
     /// Verifies that the given `path` is a binary for the given `ver_req` of the tool.
@@ -158,51 +187,49 @@ impl Toolset {
     /// Errors if the `path` exists but is an unexpected version.
     pub fn verify<T: Tool>(
         &mut self,
-        path: &Path,
+        binctx: &BinCtx,
         ver_req: &VersionReq,
     ) -> Result<Option<Version>> {
-        let version = self.version::<T>(path)?;
+        let version = self.version::<T>(binctx)?;
         let Some(version) = version else {
             return Ok(None);
         };
         if !ver_req.matches(&version) {
             bail!(
-                "expected {} to satisfy {ver_req}, got: {version}",
-                path.display()
+                "expected {} at '{}' to satisfy {ver_req}, got: {version}",
+                T::NAME,
+                binctx.path().display()
             );
         }
         Ok(Some(version))
     }
 
-    /// Returns the default version information.
+    /// Returns the [`Version`] of the binary context.
     ///
-    /// Returns `None` if no default version is found.
-    #[inline(always)]
-    pub fn default_version<T: Tool>(&mut self) -> Result<Option<Version>> {
-        self.version::<T>(&PathBuf::from(T::BIN))
-    }
-
-    /// Returns the [`Version`] of the binary at the given `path`.
-    ///
-    /// Returns `None` if the given `path` doesn't exist.
-    pub fn version<T: Tool>(&mut self, path: &Path) -> Result<Option<Version>> {
-        // First check if we already know this path's version.
-        let paths = self.tool_paths::<T>();
-        for (version, ver_path) in paths.iter() {
-            if path == ver_path {
-                return Ok(Some(version.clone()));
-            }
+    /// Returns `None` if the given binary context's path doesn't exist.
+    pub fn version<T: Tool>(&mut self, binctx: &BinCtx) -> Result<Option<Version>> {
+        // First check if we already know this binary context's version.
+        if let Some(info) = self.bins.get(binctx)
+            && info.name == T::NAME
+        {
+            return Ok(Some(info.version.clone()));
         }
 
-        // Brand new path, so we need to figure out the version.
+        // New binary context, or at least for this tool, so we need to figure out the version.
         let Some(version) =
-            T::extract_version(path).context(format!("failed to extract {} version", T::NAME))?
+            T::extract_version(binctx).context(format!("failed to extract {} version", T::NAME))?
         else {
             return Ok(None);
         };
 
         // Cache the result in the registry
-        paths.insert(version.clone(), path.into());
+        self.bins.insert(
+            binctx.clone(),
+            BinInfo {
+                name: T::NAME.into(),
+                version: version.clone(),
+            },
+        );
 
         Ok(Some(version))
     }

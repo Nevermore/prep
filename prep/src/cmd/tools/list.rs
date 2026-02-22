@@ -1,16 +1,18 @@
 // Copyright 2026 the Prep Authors
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use anyhow::Result;
+
 use crate::session::Session;
+use crate::tools::Tool;
 use crate::tools::cargo::Cargo;
 use crate::tools::ripgrep::Ripgrep;
 use crate::tools::rustup::Rustup;
+use crate::toolset::Toolset;
 use crate::ui::style::TABLE_HEADER;
 
-const MISSING: &str = "None";
-
 /// List information on all the tools in the toolset.
-pub fn run(session: &mut Session) -> anyhow::Result<()> {
+pub fn run(session: &mut Session) -> Result<()> {
     let tools = session.config().tools();
 
     let rustup_locked = format!("{}", tools.rustup());
@@ -19,18 +21,9 @@ pub fn run(session: &mut Session) -> anyhow::Result<()> {
 
     let toolset = session.toolset();
 
-    let rustup_global = toolset
-        .default_version::<Rustup>()?
-        .map(|v| format!("{v}"))
-        .unwrap_or_else(|| MISSING.into());
-    let rust_global = toolset
-        .default_version::<Cargo>()?
-        .map(|v| format!("{v}"))
-        .unwrap_or_else(|| MISSING.into());
-    let rg_global = toolset
-        .default_version::<Ripgrep>()?
-        .map(|v| format!("{v}"))
-        .unwrap_or_else(|| MISSING.into());
+    let rustup_global = default_version::<Rustup>(toolset)?;
+    let rust_global = default_version::<Cargo>(toolset)?;
+    let rg_global = default_version::<Ripgrep>(toolset)?;
 
     fn cell(s: &str, len: usize) -> String {
         let mut s = String::from(s);
@@ -65,4 +58,14 @@ pub fn run(session: &mut Session) -> anyhow::Result<()> {
     eprint!("{}", info);
 
     Ok(())
+}
+
+fn default_version<T: Tool>(toolset: &mut Toolset) -> Result<String> {
+    let deps = T::Deps::default();
+    let binctx = T::default_binctx(toolset, &deps)?;
+    let version = toolset
+        .version::<T>(&binctx)?
+        .map(|v| format!("{v}"))
+        .unwrap_or_else(|| "None".into());
+    Ok(version)
 }
